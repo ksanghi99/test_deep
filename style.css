@@ -1,0 +1,100 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Playfair Display', serif;
+    background: linear-gradient(135deg, #ffe6eb 0%, #ffd6e0 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+.game-container {
+    text-align: center;
+    max-width: 800px;
+    width: 100%;
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 20px 40px rgba(255, 77, 109, 0.2);
+}
+h1 {
+    font-family: 'Pacifico', cursive;
+    color: #d6336c;
+    font-size: 42px;
+    margin-bottom: 10px;
+}
+.subtitle { color: #ff4d6d; font-size: 20px; margin-bottom: 25px; }
+.instructions {
+    background: #fff0f3;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    font-size: 18px;
+    color: #5a3d5c;
+    border-left: 5px solid #ff4d6d;
+}
+.maze-wrapper { margin: 0 auto 30px; width: fit-content; }
+#mazeCanvas {
+    border: 4px solid #ff85a1;
+    border-radius: 10px;
+    background-color: #f8f9fa;
+    display: block;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+.controls { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 20px; }
+.control-row { display: flex; gap: 15px; }
+.control-btn {
+    width: 70px; height: 70px; font-size: 28px;
+    background: #ff4d6d; color: white; border: none;
+    border-radius: 50%; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 5px 15px rgba(255, 77, 109, 0.3);
+}
+.control-btn:hover { background: #ff758c; transform: scale(1.05); }
+.control-btn:active { transform: scale(0.95); }
+.characters { display: flex; justify-content: center; gap: 40px; margin-bottom: 25px; }
+.character { text-align: center; }
+.char-icon {
+    width: 60px; height: 60px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; margin: 0 auto 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+.mitthi { background: #ff4d6d; color: white; }
+.krishna { background: #4cc9f0; color: white; }
+.char-name { font-family: 'Pacifico', cursive; font-size: 20px; color: #5a3d5c; }
+#message {
+    font-family: 'Pacifico', cursive;
+    font-size: 28px; color: #ff006e;
+    min-height: 40px; margin-top: 20px; padding: 10px;
+}
+.stats { display: flex; justify-content: center; gap: 30px; margin-top: 20px; font-size: 18px; color: #5a3d5c; }
+.stat { background: #fff0f3; padding: 10px 20px; border-radius: 10px; min-width: 120px; }
+.stat-value { font-family: 'Pacifico', cursive; font-size: 24px; color: #ff4d6d; display: block; margin-top: 5px; }
+.reset-btn {
+    margin-top: 25px; padding: 12px 30px; font-size: 18px;
+    background: linear-gradient(45deg, #ff4d6d, #ff758c); color: white;
+    border: none; border-radius: 30px; cursor: pointer;
+    font-family: 'Playfair Display', serif; transition: transform 0.3s;
+    box-shadow: 0 5px 15px rgba(255, 77, 109, 0.3);
+}
+.reset-btn:hover { transform: scale(1.05); }
+.key-hint { font-size: 14px; color: #888; margin-top: 5px; }
+@media (max-width: 768px) {
+    h1 { font-size: 32px; }
+    .game-container { padding: 20px; }
+    #mazeCanvas { width: 95vw; max-width: 400px; height: auto; }
+    .control-btn { width: 60px; height: 60px; font-size: 24px; }
+}
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+.shake { animation: shake 0.1s linear 3; }
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+.pulse { animation: pulse 0.5s ease-in-out 3; }
