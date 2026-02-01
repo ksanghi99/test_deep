@@ -20,7 +20,6 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
-            overflow: hidden;
         }
 
         .game-container {
@@ -62,7 +61,7 @@
             width: fit-content;
         }
 
-        canvas {
+        #mazeCanvas {
             border: 4px solid #ff85a1;
             border-radius: 10px;
             background-color: #f8f9fa;
@@ -72,10 +71,15 @@
 
         .controls {
             display: flex;
-            justify-content: center;
-            gap: 15px;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
             margin-top: 20px;
-            flex-wrap: wrap;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 15px;
         }
 
         .control-btn {
@@ -101,17 +105,6 @@
 
         .control-btn:active {
             transform: scale(0.95);
-        }
-
-        .control-row {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            width: 100%;
-        }
-
-        #up-btn {
-            margin-bottom: 5px;
         }
 
         .characters {
@@ -160,16 +153,6 @@
             min-height: 40px;
             margin-top: 20px;
             padding: 10px;
-            transition: all 0.5s;
-        }
-
-        .win-animation {
-            animation: celebrate 0.5s ease-in-out 3;
-        }
-
-        @keyframes celebrate {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
         }
 
         .stats {
@@ -229,7 +212,7 @@
                 padding: 20px;
             }
             
-            canvas {
+            #mazeCanvas {
                 width: 95vw;
                 max-width: 400px;
                 height: auto;
@@ -240,30 +223,26 @@
                 height: 60px;
                 font-size: 24px;
             }
-            
-            .characters {
-                gap: 20px;
-            }
         }
 
-        /* Wall styles - visible borders */
-        .wall-demo {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            background: #ffb3c6;
-            border: 2px solid #ff4d6d;
-            margin: 0 5px;
-            vertical-align: middle;
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
 
-        .path-demo {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            background: #f8f9fa;
-            margin: 0 5px;
-            vertical-align: middle;
+        .shake {
+            animation: shake 0.1s linear 3;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse {
+            animation: pulse 0.5s ease-in-out 3;
         }
     </style>
 </head>
@@ -274,7 +253,6 @@
         
         <div class="instructions">
             <p>Use <strong>arrow keys</strong> or <strong>buttons below</strong> to move Mitthi (❤️) through the maze to reach Krishna (💙).</p>
-            <p>Walls: <span class="wall-demo"></span> | Path: <span class="path-demo"></span></p>
         </div>
         
         <div class="characters">
@@ -305,7 +283,7 @@
         
         <p class="key-hint">(You can also use keyboard arrow keys)</p>
         
-        <div id="message"></div>
+        <div id="message">Use arrows to navigate Mitthi to Krishna!</div>
         
         <div class="stats">
             <div class="stat">
@@ -320,7 +298,7 @@
     </div>
 
     <script>
-        // ===== GAME VARIABLES =====
+        // Game variables
         const canvas = document.getElementById('mazeCanvas');
         const ctx = canvas.getContext('2d');
         const messageEl = document.getElementById('message');
@@ -342,9 +320,9 @@
         let moves = 0;
         let startTime = Date.now();
         let gameWon = false;
+        let timerInterval;
 
-        // ===== MAZE DEFINITION (Medium Difficulty) =====
-        // 1 = wall, 0 = path
+        // Maze definition (1 = wall, 0 = path)
         const maze = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,0,1,0,0,0,1,0,0,0,0,0,1,0,0,1],
@@ -363,7 +341,7 @@
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
         ];
 
-        // ===== INITIALIZE GAME =====
+        // Initialize game
         function initGame() {
             player = { x: 1, y: 1 };
             target = { x: 13, y: 11 };
@@ -371,18 +349,26 @@
             startTime = Date.now();
             gameWon = false;
             messageEl.textContent = "Use arrows to navigate Mitthi to Krishna!";
-            messageEl.classList.remove('win-animation');
-            updateStats();
+            messageEl.classList.remove('pulse');
+            moveCountEl.textContent = '0';
+            timeCountEl.textContent = '0s';
+            
+            // Clear existing interval
+            if (timerInterval) clearInterval(timerInterval);
+            
+            // Start timer
+            timerInterval = setInterval(updateTimer, 1000);
+            
             drawMaze();
             setupControls();
         }
 
-        // ===== DRAW MAZE =====
+        // Draw the maze
         function drawMaze() {
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Draw maze grid
+            // Draw walls and paths
             for (let row = 0; row < maze.length; row++) {
                 for (let col = 0; col < maze[row].length; col++) {
                     const x = col * CELL_SIZE;
@@ -395,16 +381,6 @@
                         ctx.strokeStyle = WALL_BORDER;
                         ctx.lineWidth = 2;
                         ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
-                        
-                        // Add wall pattern
-                        ctx.fillStyle = WALL_BORDER;
-                        for (let i = 0; i < 4; i++) {
-                            const px = x + 5 + (i % 2) * 15;
-                            const py = y + 5 + Math.floor(i / 2) * 15;
-                            ctx.beginPath();
-                            ctx.arc(px, py, 3, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
                     } else {
                         // Draw path
                         ctx.fillStyle = PATH_COLOR;
@@ -431,12 +407,6 @@
             ctx.fillStyle = color;
             ctx.fill();
             
-            // Add glow effect
-            ctx.shadowColor = color;
-            ctx.shadowBlur = 10;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            
             // Draw border
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 3;
@@ -444,31 +414,19 @@
             
             // Draw letter
             ctx.fillStyle = 'white';
-            ctx.font = `bold ${radius}px 'Pacifico', cursive`;
+            ctx.font = `bold ${radius}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(letter, centerX, centerY);
         }
 
-        // ===== CONTROLS =====
+        // Setup controls
         function setupControls() {
-            // Keyboard controls
-            document.addEventListener('keydown', (e) => {
-                if (gameWon) return;
-                
-                let direction = null;
-                switch(e.key) {
-                    case 'ArrowUp': direction = 'up'; break;
-                    case 'ArrowDown': direction = 'down'; break;
-                    case 'ArrowLeft': direction = 'left'; break;
-                    case 'ArrowRight': direction = 'right'; break;
-                }
-                
-                if (direction) {
-                    e.preventDefault();
-                    movePlayer(direction);
-                }
-            });
+            // Remove existing event listeners
+            document.removeEventListener('keydown', handleKeyPress);
+            
+            // Add keyboard controls
+            document.addEventListener('keydown', handleKeyPress);
             
             // Button controls
             document.getElementById('up-btn').onclick = () => movePlayer('up');
@@ -478,6 +436,23 @@
             
             // Reset button
             resetBtn.onclick = initGame;
+        }
+
+        function handleKeyPress(e) {
+            if (gameWon) return;
+            
+            let direction = null;
+            switch(e.key) {
+                case 'ArrowUp': direction = 'up'; break;
+                case 'ArrowDown': direction = 'down'; break;
+                case 'ArrowLeft': direction = 'left'; break;
+                case 'ArrowRight': direction = 'right'; break;
+            }
+            
+            if (direction) {
+                e.preventDefault();
+                movePlayer(direction);
+            }
         }
 
         function movePlayer(direction) {
@@ -493,7 +468,7 @@
                 case 'right': newX++; break;
             }
             
-            // Check if move is valid (not a wall and within bounds)
+            // Check if move is valid
             if (newY >= 0 && newY < maze.length && 
                 newX >= 0 && newX < maze[0].length && 
                 maze[newY][newX] === 0) {
@@ -501,7 +476,7 @@
                 player.x = newX;
                 player.y = newY;
                 moves++;
-                updateStats();
+                moveCountEl.textContent = moves;
                 drawMaze();
                 
                 // Check for win
@@ -509,29 +484,30 @@
                     winGame();
                 }
             } else {
-                // Invalid move feedback
-                canvas.style.transform = 'translateX(5px)';
+                // Invalid move - shake effect
+                canvas.classList.add('shake');
                 setTimeout(() => {
-                    canvas.style.transform = 'translateX(-5px)';
-                    setTimeout(() => {
-                        canvas.style.transform = 'translateX(0)';
-                    }, 50);
-                }, 50);
+                    canvas.classList.remove('shake');
+                }, 300);
             }
         }
 
-        // ===== WIN CONDITION =====
         function winGame() {
             gameWon = true;
+            clearInterval(timerInterval);
+            
             const timeTaken = Math.floor((Date.now() - startTime) / 1000);
             
             messageEl.textContent = `🎉 You did it! Mitthi found Krishna! 🎉`;
-            messageEl.classList.add('win-animation');
+            messageEl.classList.add('pulse');
             
-            // Celebration effects
-            celebrate();
+            // Canvas shake
+            canvas.classList.add('shake');
+            setTimeout(() => {
+                canvas.classList.remove('shake');
+            }, 300);
             
-            // Show stats
+            // Show final message
             setTimeout(() => {
                 messageEl.innerHTML = `
                     Perfect! 💖<br>
@@ -541,78 +517,15 @@
             }, 1500);
         }
 
-        function celebrate() {
-            // Canvas shake
-            canvas.style.animation = 'shake 0.5s ease-in-out 3';
-            
-            // Add shake animation
-            if (!document.querySelector('#shake-style')) {
-                const style = document.createElement('style');
-                style.id = 'shake-style';
-                style.textContent = `
-                    @keyframes shake {
-                        0%, 100% { transform: translateX(0); }
-                        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-                        20%, 40%, 60%, 80% { transform: translateX(5px); }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-            
-            // Draw hearts around player
-            drawHearts();
-        }
-
-        function drawHearts() {
-            const centerX = player.x * CELL_SIZE + CELL_SIZE / 2;
-            const centerY = player.y * CELL_SIZE + CELL_SIZE / 2;
-            
-            for (let i = 0; i < 8; i++) {
-                setTimeout(() => {
-                    const angle = (i / 8) * Math.PI * 2;
-                    const radius = 50;
-                    const heartX = centerX + Math.cos(angle) * radius;
-                    const heartY = centerY + Math.sin(angle) * radius;
-                    
-                    // Draw a small heart
-                    ctx.save();
-                    ctx.translate(heartX, heartY);
-                    ctx.scale(0.5, 0.5);
-                    ctx.fillStyle = '#ff4d6d';
-                    drawHeartShape(ctx);
-                    ctx.fill();
-                    ctx.restore();
-                }, i * 100);
-            }
-        }
-
-        function drawHeartShape(ctx) {
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.bezierCurveTo(0, -10, -10, -20, 0, -30);
-            ctx.bezierCurveTo(10, -20, 0, -10, 0, 0);
-            ctx.closePath();
-        }
-
-        // ===== STATS UPDATE =====
-        function updateStats() {
-            moveCountEl.textContent = moves;
-            
+        function updateTimer() {
             if (!gameWon) {
                 const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
                 timeCountEl.textContent = `${timeElapsed}s`;
             }
         }
 
-        // ===== START THE GAME =====
+        // Start the game
         initGame();
-        
-        // Update time every second
-        setInterval(() => {
-            if (!gameWon) {
-                updateStats();
-            }
-        }, 1000);
     </script>
 </body>
 </html>
